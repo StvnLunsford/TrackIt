@@ -1,16 +1,20 @@
 package trackit;
 
-import trackit.DAL.*;
+import java.sql.SQLException;
+import trackit.DAL.SQLHelper;
 
 /**
  * Super class of all objects that exist in the database.
+ *
+ * @author Bond
  */
-public abstract class DatabaseObject
-        implements IDataAwareObject {
+public abstract class DatabaseObject {
 
     // <editor-fold defaultstate="expanded" desc="Protected Fields">
+    /**
+     * The primary key of the database object.
+     */
     protected Integer primaryKey = null;
-    private String errorMessage;
 
     // </editor-fold>
     // <editor-fold defaultstate="expanded" desc="Protected Methods">
@@ -21,43 +25,26 @@ public abstract class DatabaseObject
      * database.
      */
     protected boolean isAlreadyInDatabase() {
-        //TODO:  code this check.  If primary key is already in the database, then return true.
-        return false;
+        return !(primaryKey.equals(SQLHelper.INVALID_PRIMARY_KEY));
     }
-    
+
     /**
-     * The getter for the errorMessage field. Will be either cleared or set with
-     * an error message when a method from the IDataAwareObject interface is
-     * called. The error message is only valid for the last interface method
-     * call.
+     * This can not be null. Must be overridden in child object to handle null
+     * checks.
+     *
+     * @param primaryKey
+     * @throws SQLException
+     */
+    protected abstract void setPrimaryKey(Integer primaryKey)
+            throws SQLException;
+
+    /**
+     * This can not be null.
      *
      * @return
      */
-    protected String getErrorMessage() {
-        return this.errorMessage;
-    }
-
-    @Override
-    public void setPrimaryKey(Integer primaryKey) {
-        this.primaryKey = primaryKey;
-    }
-
-    @Override
     public Integer getPrimaryKey() {
         return this.primaryKey;
     }
-
-    @Override
-    public abstract boolean load();
-
-    @Override
-    public abstract boolean load(Integer primaryKey);
-
-    @Override
-    public abstract boolean save();
-
-    @Override
-    public abstract boolean remove();
-
-    // </editor-fold>
+    // </editor-fold>  
 }

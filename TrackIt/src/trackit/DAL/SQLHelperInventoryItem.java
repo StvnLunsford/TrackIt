@@ -2,52 +2,69 @@ package trackit.DAL;
 
 import java.sql.*;
 import java.util.*;
-import trackit.*;
+import trackit.AnInventoryItem;
 
 /**
  * DAL Layer: Converts a row in database table InventoryItems into an
- * InventoryItem object and vice versa.
+ * AnInventoryItem object and vice versa.
  *
  * @author Bond
  */
 public class SQLHelperInventoryItem
-        extends SQLHelper<InventoryItem>
-        implements ISQLHelper<InventoryItem> {
+        extends SQLHelper<AnInventoryItem> {
 
+    // <editor-fold defaultstate="collapsed" desc="Constants">
+    private static final SQLHelperItem HELPER_ITEM = new SQLHelperItem();
+    // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Database Columns">
-    public final String COLUMN_ITEMID = "itemId";
-    public final String COLUMN_QUANTITY = "quantity";
-    public final String COLUMN_EXPIRATIONDATE = "expirationDate";
-    public final String COLUMN_DESCRIPTION = "description";
-    public final String COLUMN_SKU = "sku";
-    public final String COLUMN_SIZEUNIT = "sizeUnit";
-    public final String COLUMN_ITEMSTATUS = "itemStatus";
+    /**
+     *
+     */
+    public static final String COLUMN_PK = "inventoryItemId";
+    /**
+     *
+     */
+    public static final String COLUMN_ITEMID = "itemId";
+    /**
+     *
+     */
+    public static final String COLUMN_QUANTITY = "quantity";
+    /**
+     *
+     */
+    public static final String COLUMN_EXPIRATIONDATE = "expirationDate";
 
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Constructors">
+    /**
+     * Default constructor.
+     */
     public SQLHelperInventoryItem() {
     }
+
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Private Methods">
-
     @Override
-    protected InventoryItem convertResultSetToObject(ResultSet rs)
+    protected AnInventoryItem convertResultSetToObject(ResultSet rs)
             throws SQLException {
-        InventoryItem anObj = new InventoryItem();
-        anObj.setPrimaryKey(rs.getInt(COLUMN_PK));
-        //TODO:
-        //anObj.setNickname(rs.getString(COLUMN_NICKNAME));
-        //anObj.setUrl(rs.getString(COLUMN_URL));
+        AnInventoryItem anObj = new AnInventoryItem();
+        anObj.setPrimaryKey(rs.getInt(SQLHelperInventoryItem.COLUMN_PK));
+        anObj.setItemId(rs.getInt(COLUMN_ITEMID));
+        anObj.setQuantity(rs.getInt(COLUMN_QUANTITY));
+        anObj.setExpirationDate(rs.getDate(COLUMN_EXPIRATIONDATE));
+        anObj.setDescription(rs.getString(SQLHelperItem.COLUMN_DESCRIPTION));
+        anObj.setSku(rs.getString(SQLHelperItem.COLUMN_SKU));
+        anObj.setSizeUnit(rs.getString(SQLHelperItem.COLUMN_SIZEUNIT));
+        anObj.setItemStatus(rs.getString(SQLHelperItem.COLUMN_ITEMSTATUS));
         return anObj;
     }
 
     @Override
-    protected ArrayList<InventoryItem> execSproc(String sprocName, HashMap<Integer, SprocParameter> parameters)
+    protected ArrayList<AnInventoryItem> execSproc(String sprocName, HashMap<Integer, SprocParameter> parameters)
             throws SQLException, Exception {
-        ArrayList<InventoryItem> results = new ArrayList<>();
+        ArrayList<AnInventoryItem> results = new ArrayList<>();
 
         String sql = buildSprocSyntax(sprocName, parameters.size());
-        System.out.println("execSproc's sql = " + sql);
 
         try (Connection myConn = sqlConn.getConnection();
                 CallableStatement stmt = myConn.prepareCall(sql)) {
@@ -75,21 +92,43 @@ public class SQLHelperInventoryItem
     // <editor-fold defaultstate="collapsed" desc="Public Methods">
 
     @Override
-    public ArrayList<InventoryItem> selectAll()
+    public ArrayList<AnInventoryItem> selectAll()
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
 
-        ArrayList<InventoryItem> results = execSproc("sp_InventoryItems_SelectAll", params);
+        ArrayList<AnInventoryItem> results = execSproc("sp_InventoryItems_SelectAll", params);
         return results;
     }
 
     @Override
-    public InventoryItem selectOne(Integer primaryKey)
+    public AnInventoryItem selectOne(Integer primaryKey)
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
-        params.put(0, new SprocParameterInteger("COLUMN_PK", primaryKey.toString(), ParameterDirection.IN));
+        params.put(0, new SprocParameterInteger(SQLHelperInventoryItem.COLUMN_PK, primaryKey.toString(), ParameterDirection.IN));
 
-        ArrayList<InventoryItem> results = execSproc("sp_InventoryItems_Select", params);
+        ArrayList<AnInventoryItem> results = execSproc("sp_InventoryItems_Select", params);
+        if (results.isEmpty()) {
+            return null;
+        } else {
+            return results.get(0);
+        }
+    }
+
+    /**
+     * Gets the inventory item from the database that matches the specified
+     * order item.
+     *
+     * @param primaryKey The primary key of the order item.
+     * @return An inventory items that matches the specified order item.
+     * @throws SQLException
+     * @throws Exception
+     */
+    public AnInventoryItem selectByOrderItem(Integer primaryKey)
+            throws SQLException, Exception {
+        HashMap<Integer, SprocParameter> params = new HashMap<>();
+        params.put(0, new SprocParameterInteger(SQLHelperOrderItem.COLUMN_PK, primaryKey.toString(), ParameterDirection.IN));
+
+        ArrayList<AnInventoryItem> results = execSproc("sp_InventoryItems_SelectByOrderItem", params);
         if (results.isEmpty()) {
             return null;
         } else {
@@ -98,24 +137,18 @@ public class SQLHelperInventoryItem
     }
 
     @Override
-    public List<Integer> insertAll(List<InventoryItem> aList)
-            throws SQLException, Exception {
-        ArrayList<Integer> primaryKeys = new ArrayList<>();
-        for (InventoryItem anObj : aList) {
-            primaryKeys.add(insert(anObj));
-        }
-        return primaryKeys;
-    }
-
-    @Override
-    public Integer insert(InventoryItem anObject)
+    public Integer insert(AnInventoryItem anObject)
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
-        SprocParameterInteger outParam = new SprocParameterInteger(COLUMN_PK, anObject.getPrimaryKey().toString(), ParameterDirection.OUT);
+        SprocParameterInteger outParam = new SprocParameterInteger(SQLHelperInventoryItem.COLUMN_PK, anObject.getPrimaryKey().toString(), ParameterDirection.OUT);
         params.put(0, outParam);
-        //TODO:
-        //params.put(1, new SprocParameterVarchar("nickname", anObject.getNickname(), ParameterDirection.IN));
-        //params.put(2, new SprocParameterVarchar("url", anObject.getUrl(), ParameterDirection.IN));
+        params.put(1, new SprocParameterInteger(SQLHelperInventoryItem.COLUMN_QUANTITY, anObject.getQuantity().toString(), ParameterDirection.IN));
+        String expirationDate = (anObject.getExpirationDate() == null ? null : anObject.getExpirationDate().toString());
+        params.put(2, new SprocParameterDate(SQLHelperInventoryItem.COLUMN_EXPIRATIONDATE, expirationDate, ParameterDirection.IN));
+        params.put(3, new SprocParameterVarchar(SQLHelperItem.COLUMN_DESCRIPTION, anObject.getDescription(), ParameterDirection.IN));
+        params.put(4, new SprocParameterVarchar(SQLHelperItem.COLUMN_SKU, anObject.getSku(), ParameterDirection.IN));
+        params.put(5, new SprocParameterVarchar(SQLHelperItem.COLUMN_SIZEUNIT, anObject.getSizeUnit(), ParameterDirection.IN));
+        params.put(6, new SprocParameterVarchar(SQLHelperItem.COLUMN_ITEMSTATUS, anObject.getItemStatus().toString(), ParameterDirection.IN));
 
         execSproc("sp_InventoryItems_Insert", params);
         Integer primaryKey = Integer.parseInt(outParam.getValue());
@@ -124,58 +157,53 @@ public class SQLHelperInventoryItem
     }
 
     @Override
-    public void updateAll(List<InventoryItem> aList)
-            throws SQLException, Exception {
-        for (InventoryItem anObj : aList) {
-            update(anObj);
-        }
-    }
-
-    @Override
-    public void update(InventoryItem anObject)
+    public void update(AnInventoryItem anObject)
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
-        params.put(0, new SprocParameterInteger(COLUMN_PK, anObject.getPrimaryKey().toString(), ParameterDirection.IN));
-        //TODO:
-        //params.put(1, new SprocParameterVarchar("nickname", anObject.getNickname(), ParameterDirection.IN));
-        //params.put(2, new SprocParameterVarchar("url", anObject.getUrl(), ParameterDirection.IN));
+        params.put(0, new SprocParameterInteger(SQLHelperInventoryItem.COLUMN_PK, anObject.getPrimaryKey().toString(), ParameterDirection.IN));
+        params.put(1, new SprocParameterInteger(SQLHelperInventoryItem.COLUMN_QUANTITY, anObject.getQuantity().toString(), ParameterDirection.IN));
+        String expirationDate = (anObject.getExpirationDate() == null ? null : anObject.getExpirationDate().toString());
+        params.put(2, new SprocParameterDate(SQLHelperInventoryItem.COLUMN_EXPIRATIONDATE, expirationDate, ParameterDirection.IN));
+        params.put(3, new SprocParameterVarchar(SQLHelperItem.COLUMN_DESCRIPTION, anObject.getDescription(), ParameterDirection.IN));
+        params.put(4, new SprocParameterVarchar(SQLHelperItem.COLUMN_SKU, anObject.getSku(), ParameterDirection.IN));
+        params.put(5, new SprocParameterVarchar(SQLHelperItem.COLUMN_SIZEUNIT, anObject.getSizeUnit(), ParameterDirection.IN));
+        params.put(6, new SprocParameterVarchar(SQLHelperItem.COLUMN_ITEMSTATUS, anObject.getItemStatus().toString(), ParameterDirection.IN));
 
         execSproc("sp_InventoryItems_Update", params);
-    }
-
-    @Override
-    public void deleteAll(List<Integer> primaryKeys)
-            throws SQLException, Exception {
-        for (Integer aPK : primaryKeys) {
-            delete(aPK);
-        }
     }
 
     @Override
     public void delete(Integer primaryKey)
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
-        params.put(0, new SprocParameterInteger(COLUMN_PK, primaryKey.toString(), ParameterDirection.IN));
+        params.put(0, new SprocParameterInteger(SQLHelperInventoryItem.COLUMN_PK, primaryKey.toString(), ParameterDirection.IN));
 
         execSproc("sp_InventoryItems_Delete", params);
     }
 
     @Override
-    public java.util.Date doNullCheck(String columnName, java.util.Date aValue)
+    public java.sql.Date doNullCheck(String columnName, java.sql.Date aValue)
             throws SQLException {
-        throw new NonNullableValueException();
+        if (aValue == null && columnName.equalsIgnoreCase(SQLHelperInventoryItem.COLUMN_EXPIRATIONDATE)) {
+            return aValue; //Allow nulls for this column.
+        } else {
+            return aValue;
+        }
     }
 
     @Override
     public Double doNullCheck(String columnName, Double aValue)
             throws SQLException {
-        throw new NonNullableValueException();
+        throw new UnsupportedSQLTypeException(Types.DOUBLE, this.getClass());
     }
 
     @Override
     public Integer doNullCheck(String columnName, Integer aValue)
             throws SQLException {
-        if (aValue == null && columnName.equalsIgnoreCase(COLUMN_PK)) {
+        if (aValue == null
+                && (columnName.equalsIgnoreCase(SQLHelperInventoryItem.COLUMN_PK)
+                || columnName.equalsIgnoreCase(SQLHelperInventoryItem.COLUMN_ITEMID)
+                || columnName.equalsIgnoreCase(SQLHelperInventoryItem.COLUMN_QUANTITY))) {
             throw new NonNullableValueException();
         } else {
             return aValue;
@@ -185,11 +213,7 @@ public class SQLHelperInventoryItem
     @Override
     public String doNullCheck(String columnName, String aValue)
             throws SQLException {
-        if (aValue == null && false /*columnName.equalsIgnoreCase(COLUMN_NICKNAME)*/) {
-            throw new NonNullableValueException();
-        } else {
-            return aValue;
-        }
+        return HELPER_ITEM.doNullCheck(columnName, aValue);
     }
     // </editor-fold>
 }

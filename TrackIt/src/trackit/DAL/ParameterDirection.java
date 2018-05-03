@@ -25,18 +25,22 @@ public enum ParameterDirection {
      */
     OUT(4);
     // </editor-fold>
-
     // <editor-fold defaultstate="collapsed" desc="Private Fields">
     private final int value;
-    // </editor-fold>
 
+    // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Constructors">
     private ParameterDirection(int value) {
         this.value = value;
     }
-    // </editor-fold>
 
+    // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Public Methods">
+    /**
+     * Gets the Integer equivalent of the enumerated value.
+     *
+     * @return
+     */
     public int getValue() {
         return this.value;
     }

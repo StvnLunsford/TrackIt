@@ -14,5 +14,12 @@
 *.properties
 >>>>>>> lagail_dev
 *.properties
+<<<<<<< HEAD
+>>>>>>> lagail_dev
+=======
+*.properties
 >>>>>>> lagail_dev
 *.properties
+TrackIt/nbproject/private/private.properties
+*.properties
+TrackIt/nbproject/private/private.properties

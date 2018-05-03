@@ -2,34 +2,46 @@ package trackit.DAL;
 
 import java.sql.*;
 import java.util.*;
-import trackit.*;
+import trackit.ASupplier;
 
 /**
- * DAL Layer: Converts a row in database table Suppliers into a Supplier object
+ * DAL Layer: Converts a row in database table Suppliers into a ASupplier object
  * and vice versa.
  *
  * @author Bond
  */
 public class SQLHelperSupplier
-        extends SQLHelper<Supplier>
-        implements ISQLHelper<Supplier> {
+        extends SQLHelper<ASupplier> {
 
     // <editor-fold defaultstate="collapsed" desc="Database Columns">
-    public final String COLUMN_NICKNAME = "nickname";
-    public final String COLUMN_URL = "url";
+    /**
+     *
+     */
+    public static final String COLUMN_PK = "supplierId";
+    /**
+     *
+     */
+    public static final String COLUMN_NICKNAME = "nickname";
+    /**
+     *
+     */
+    public static final String COLUMN_URL = "url";
 
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Constructors">
+    /**
+     * Default constructor.
+     */
     public SQLHelperSupplier() {
-        COLUMN_PK = "supplierId";
+
     }
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Private Methods">
 
     @Override
-    protected Supplier convertResultSetToObject(ResultSet rs)
+    protected ASupplier convertResultSetToObject(ResultSet rs)
             throws SQLException {
-        Supplier anObj = new Supplier();
+        ASupplier anObj = new ASupplier();
         anObj.setPrimaryKey(rs.getInt(COLUMN_PK));
         anObj.setNickname(rs.getString(COLUMN_NICKNAME));
         anObj.setUrl(rs.getString(COLUMN_URL));
@@ -37,12 +49,11 @@ public class SQLHelperSupplier
     }
 
     @Override
-    protected ArrayList<Supplier> execSproc(String sprocName, HashMap<Integer, SprocParameter> parameters)
+    protected ArrayList<ASupplier> execSproc(String sprocName, HashMap<Integer, SprocParameter> parameters)
             throws SQLException, Exception {
-        ArrayList<Supplier> results = new ArrayList<>();
+        ArrayList<ASupplier> results = new ArrayList<>();
 
         String sql = buildSprocSyntax(sprocName, parameters.size());
-        System.out.println("execSproc's sql = " + sql);
 
         try (Connection myConn = sqlConn.getConnection();
                 CallableStatement stmt = myConn.prepareCall(sql)) {
@@ -70,21 +81,21 @@ public class SQLHelperSupplier
     // <editor-fold defaultstate="collapsed" desc="Public Methods">
 
     @Override
-    public ArrayList<Supplier> selectAll()
+    public ArrayList<ASupplier> selectAll()
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
 
-        ArrayList<Supplier> results = execSproc("sp_Suppliers_SelectAll", params);
+        ArrayList<ASupplier> results = execSproc("sp_Suppliers_SelectAll", params);
         return results;
     }
 
     @Override
-    public Supplier selectOne(Integer primaryKey)
+    public ASupplier selectOne(Integer primaryKey)
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
-        params.put(0, new SprocParameterInteger(COLUMN_PK, primaryKey.toString(), ParameterDirection.IN));
+        params.put(0, new SprocParameterInteger(SQLHelperSupplier.COLUMN_PK, primaryKey.toString(), ParameterDirection.IN));
 
-        ArrayList<Supplier> results = execSproc("sp_Suppliers_Select", params);
+        ArrayList<ASupplier> results = execSproc("sp_Suppliers_Select", params);
         if (results.isEmpty()) {
             return null;
         } else {
@@ -93,23 +104,13 @@ public class SQLHelperSupplier
     }
 
     @Override
-    public List<Integer> insertAll(List<Supplier> aList)
-            throws SQLException, Exception {
-        ArrayList<Integer> primaryKeys = new ArrayList<>();
-        for (Supplier anObj : aList) {
-            primaryKeys.add(insert(anObj));
-        }
-        return primaryKeys;
-    }
-
-    @Override
-    public Integer insert(Supplier anObject)
+    public Integer insert(ASupplier anObject)
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
-        SprocParameterInteger outParam = new SprocParameterInteger(COLUMN_PK, anObject.getPrimaryKey().toString(), ParameterDirection.OUT);
+        SprocParameterInteger outParam = new SprocParameterInteger(SQLHelperSupplier.COLUMN_PK, anObject.getPrimaryKey().toString(), ParameterDirection.OUT);
         params.put(0, outParam);
-        params.put(1, new SprocParameterVarchar("nickname", anObject.getNickname(), ParameterDirection.IN));
-        params.put(2, new SprocParameterVarchar("url", anObject.getUrl(), ParameterDirection.IN));
+        params.put(1, new SprocParameterVarchar(SQLHelperSupplier.COLUMN_NICKNAME, anObject.getNickname(), ParameterDirection.IN));
+        params.put(2, new SprocParameterVarchar(SQLHelperSupplier.COLUMN_URL, anObject.getUrl(), ParameterDirection.IN));
 
         execSproc("sp_Suppliers_Insert", params);
         Integer primaryKey = Integer.parseInt(outParam.getValue());
@@ -118,57 +119,41 @@ public class SQLHelperSupplier
     }
 
     @Override
-    public void updateAll(List<Supplier> aList)
-            throws SQLException, Exception {
-        for (Supplier anObj : aList) {
-            update(anObj);
-        }
-    }
-
-    @Override
-    public void update(Supplier anObject)
+    public void update(ASupplier anObject)
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
-        params.put(0, new SprocParameterInteger(COLUMN_PK, anObject.getPrimaryKey().toString(), ParameterDirection.IN));
-        params.put(1, new SprocParameterVarchar("nickname", anObject.getNickname(), ParameterDirection.IN));
-        params.put(2, new SprocParameterVarchar("url", anObject.getUrl(), ParameterDirection.IN));
+        params.put(0, new SprocParameterInteger(SQLHelperSupplier.COLUMN_PK, anObject.getPrimaryKey().toString(), ParameterDirection.IN));
+        params.put(1, new SprocParameterVarchar(SQLHelperSupplier.COLUMN_NICKNAME, anObject.getNickname(), ParameterDirection.IN));
+        params.put(2, new SprocParameterVarchar(SQLHelperSupplier.COLUMN_URL, anObject.getUrl(), ParameterDirection.IN));
 
         execSproc("sp_Suppliers_Update", params);
-    }
-
-    @Override
-    public void deleteAll(List<Integer> primaryKeys)
-            throws SQLException, Exception {
-        for (Integer aPK : primaryKeys) {
-            delete(aPK);
-        }
     }
 
     @Override
     public void delete(Integer primaryKey)
             throws SQLException, Exception {
         HashMap<Integer, SprocParameter> params = new HashMap<>();
-        params.put(0, new SprocParameterInteger(COLUMN_PK, primaryKey.toString(), ParameterDirection.IN));
+        params.put(0, new SprocParameterInteger(SQLHelperSupplier.COLUMN_PK, primaryKey.toString(), ParameterDirection.IN));
 
         execSproc("sp_Suppliers_Delete", params);
     }
 
     @Override
-    public java.util.Date doNullCheck(String columnName, java.util.Date aValue)
+    public java.sql.Date doNullCheck(String columnName, java.sql.Date aValue)
             throws SQLException {
-        throw new NonNullableValueException();
+        throw new UnsupportedSQLTypeException(Types.DATE, this.getClass());
     }
 
     @Override
     public Double doNullCheck(String columnName, Double aValue)
             throws SQLException {
-        throw new NonNullableValueException();
+        throw new UnsupportedSQLTypeException(Types.DOUBLE, this.getClass());
     }
 
     @Override
     public Integer doNullCheck(String columnName, Integer aValue)
             throws SQLException {
-        if (aValue == null && columnName.equalsIgnoreCase(COLUMN_PK)) {
+        if (aValue == null && columnName.equalsIgnoreCase(SQLHelperSupplier.COLUMN_PK)) {
             throw new NonNullableValueException();
         } else {
             return aValue;
@@ -178,7 +163,7 @@ public class SQLHelperSupplier
     @Override
     public String doNullCheck(String columnName, String aValue)
             throws SQLException {
-        if (aValue == null && columnName.equalsIgnoreCase(COLUMN_NICKNAME)) {
+        if (aValue == null && columnName.equalsIgnoreCase(SQLHelperSupplier.COLUMN_NICKNAME)) {
             throw new NonNullableValueException();
         } else {
             return aValue;

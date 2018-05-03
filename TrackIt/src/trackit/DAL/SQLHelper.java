@@ -9,25 +9,27 @@ import java.util.*;
  * @param <T> The type of object that it is helping.
  * @author Bond
  */
-public abstract class SQLHelper<T> {
+public abstract class SQLHelper<T>
+        implements ISQLHelper<T> {
 
     // <editor-fold defaultstate="collapsed" desc="Constants">
     /**
      * This value can never be a primary key.
      */
     public final static Integer INVALID_PRIMARY_KEY = 0;
-    /**
-     * Should be final, but java doesn't allow this with the inheritance that we
-     * are using. Thus, it is only set in child constructors.
-     */
-    public String COLUMN_PK;
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Protected Fields">
 
+    /**
+     *
+     */
     protected final SQLConnector sqlConn = SQLConnector.getInstance();
 
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Constructors">
+    /**
+     * Default Constructor.
+     */
     protected SQLHelper() {
     }
 
@@ -64,10 +66,10 @@ public abstract class SQLHelper<T> {
                         stmt.setDate(aParam.getName(), java.sql.Date.valueOf(aParam.getValue()));
                         break;
                     case Types.DOUBLE:
-                        stmt.setDouble(aParam.getName(), Double.valueOf(aParam.getValue()));
+                        stmt.setDouble(aParam.getName(), Double.parseDouble(aParam.getValue()));
                         break;
                     case Types.INTEGER:
-                        stmt.setInt(aParam.getName(), Integer.valueOf(aParam.getValue()));
+                        stmt.setInt(aParam.getName(), Integer.parseInt(aParam.getValue()));
                         break;
                     case Types.VARCHAR:
                         stmt.setString(aParam.getName(), aParam.getValue());
@@ -93,8 +95,7 @@ public abstract class SQLHelper<T> {
     protected String buildSprocSyntax(String sprocName, int parameterCount) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("{");
-        sb.append("CALL ");
+        sb.append("{ CALL ");
         sb.append(sprocName);
         if (parameterCount > 0) {
             sb.append("(");
@@ -151,7 +152,6 @@ public abstract class SQLHelper<T> {
      *
      * @param stmt The CallableStatement that called the stored procedure.
      * @param aParam The SprocParameter that we need the value for.
-     * @param index The index of the parameter within the stored procedure.
      * @return The value of the OUT parameter as a String.
      * @throws SQLException
      * @throws Exception
@@ -205,36 +205,10 @@ public abstract class SQLHelper<T> {
      * @throws Exception
      */
     protected abstract ArrayList<T> execSproc(String sprocName, HashMap<Integer, SprocParameter> parameters)
-            throws SQLException, Exception;/* {
-        ArrayList<T> results = new ArrayList<>();
+            throws SQLException, Exception;
 
-        String sql = buildSprocSyntax(sprocName, parameters.size());
-        System.out.println("execSproc's sql = " + sql);
-        try (Connection myConn = sqlConn.getConnection();
-                CallableStatement stmt = myConn.prepareCall(sql)) {
-
-            final ArrayList<Integer> outParams = setParameters(stmt, parameters);
-
-            //Get the result set, if any.
-            if (stmt.execute()) {
-                ResultSet rs = stmt.getResultSet();
-                while (rs.next()) {
-                    T aBiler = new T();
-
-                    results.add(aBiler);
-                }
-            }
-
-            //Retrieve OUT parameters.
-            for (int aParamIndex : outParams) {
-                SprocParameter aParam = parameters.get(aParamIndex);
-                aParam.setValue(String.valueOf(stmt.getInt(aParamIndex)));
-            }
-        }
-
-        return results;
-    }*/
-
+    // </editor-fold>
+    // <editor-fold defaultstate="collapsed" desc="Public Methods">
     /**
      * Checks to see if any column that is not nullable has a null value.
      *
@@ -243,7 +217,7 @@ public abstract class SQLHelper<T> {
      * @return True = either column allows nulls or value is not null; False =
      * column doesn't allow nulls and value is null.
      */
-    protected boolean tryNullCheck(String columnName, java.util.Date aValue) {
+    public boolean tryNullCheck(String columnName, java.sql.Date aValue) {
         try {
             doNullCheck(columnName, aValue);
             return true;
@@ -260,14 +234,8 @@ public abstract class SQLHelper<T> {
      * @return Either the parameter aValue or throws NonNullableValueException.
      * @throws SQLException When aValue is NULL and NULL is not allowed.
      */
-    protected abstract java.util.Date doNullCheck(String columnName, java.util.Date aValue)
-            throws SQLException;/* {
-        if (aValue == null && false) {
-            throw new NonNullableValueException();
-        } else {
-            return aValue;
-        }
-    }*/
+    public abstract java.sql.Date doNullCheck(String columnName, java.sql.Date aValue)
+            throws SQLException;
 
     /**
      * Checks to see if any column that is not nullable has a null value.
@@ -277,7 +245,7 @@ public abstract class SQLHelper<T> {
      * @return True = either column allows nulls or value is not null; False =
      * column doesn't allow nulls and value is null.
      */
-    protected boolean tryNullCheck(String columnName, Double aValue) {
+    public boolean tryNullCheck(String columnName, Double aValue) {
         try {
             doNullCheck(columnName, aValue);
             return true;
@@ -294,14 +262,8 @@ public abstract class SQLHelper<T> {
      * @return Either the parameter aValue or throws NonNullableValueException.
      * @throws SQLException When aValue is NULL and NULL is not allowed.
      */
-    protected abstract Double doNullCheck(String columnName, Double aValue)
-            throws SQLException;/* {
-        if (aValue == null && false) {
-            throw new NonNullableValueException();
-        } else {
-            return aValue;
-        }
-    }*/
+    public abstract Double doNullCheck(String columnName, Double aValue)
+            throws SQLException;
 
     /**
      * Checks to see if any column that is not nullable has a null value.
@@ -311,7 +273,7 @@ public abstract class SQLHelper<T> {
      * @return True = either column allows nulls or value is not null; False =
      * column doesn't allow nulls and value is null.
      */
-    protected boolean tryNullCheck(String columnName, Integer aValue) {
+    public boolean tryNullCheck(String columnName, Integer aValue) {
         try {
             doNullCheck(columnName, aValue);
             return true;
@@ -328,14 +290,8 @@ public abstract class SQLHelper<T> {
      * @return Either the parameter aValue or throws NonNullableValueException.
      * @throws SQLException When aValue is NULL and NULL is not allowed.
      */
-    protected abstract Integer doNullCheck(String columnName, Integer aValue)
-            throws SQLException;/* {
-        if (aValue == null && false) {
-            throw new NonNullableValueException();
-        } else {
-            return aValue;
-        }
-    }*/
+    public abstract Integer doNullCheck(String columnName, Integer aValue)
+            throws SQLException;
 
     /**
      * Checks to see if any column that is not nullable has a null value.
@@ -345,7 +301,7 @@ public abstract class SQLHelper<T> {
      * @return True = either column allows nulls or value is not null; False =
      * column doesn't allow nulls and value is null.
      */
-    protected boolean tryNullCheck(String columnName, String aValue) {
+    public boolean tryNullCheck(String columnName, String aValue) {
         try {
             doNullCheck(columnName, aValue);
             return true;
@@ -362,13 +318,7 @@ public abstract class SQLHelper<T> {
      * @return Either the parameter aValue or throws NonNullableValueException.
      * @throws SQLException When aValue is NULL and NULL is not allowed.
      */
-    protected abstract String doNullCheck(String columnName, String aValue)
-            throws SQLException;/* {
-        if (aValue == null && false) {
-            throw new NonNullableValueException();
-        } else {
-            return aValue;
-        }
-    }*/
+    public abstract String doNullCheck(String columnName, String aValue)
+            throws SQLException;
     // </editor-fold>
 }

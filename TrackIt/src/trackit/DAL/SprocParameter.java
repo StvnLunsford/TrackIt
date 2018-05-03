@@ -32,7 +32,7 @@ public abstract class SprocParameter {
      * @param aValueType The data type of the parameter as specified by the
      * Types class.
      */
-    protected SprocParameter(int aValueType) {
+    private SprocParameter(int aValueType) {
         if (aValueType != Types.VARCHAR
                 && aValueType != Types.INTEGER
                 && aValueType != Types.DOUBLE
@@ -77,18 +77,35 @@ public abstract class SprocParameter {
     }
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Public Methods">
+
+    /**
+     *
+     * @return
+     */
     public boolean isNull() {
         return (this.value == null);
     }
 
+    /**
+     *
+     * @return
+     */
     public String getName() {
         return this.name;
     }
 
+    /**
+     *
+     * @return
+     */
     public String getValue() {
         return this.value;
     }
 
+    /**
+     *
+     * @param aValue
+     */
     public void setValue(String aValue) {
         this.value = aValue;
     }

@@ -4,6 +4,8 @@ import trackit.DAL.*;
 
 /**
  * The TrackIt program starts here!
+ *
+ * @author Bond
  */
 public class TrackIt {
 
@@ -31,6 +33,8 @@ public class TrackIt {
                     break;
                 case 1:
                     conn.setConnectionString(args[0]);
+                    break;
+                default:
                     break;
             }
         } catch (NumberFormatException exNF) {

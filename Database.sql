@@ -41,12 +41,6 @@ END $$
 DELIMITER ; $$
 DELIMITER ;
 
-/*lookups*/
-CALL sp_FK_Drop('items', 'fk_items_lookups_sizeUnit');
-CALL sp_FK_Drop('items', 'fk_items_lookups_itemStatus');
-CALL sp_FK_Drop('orders', 'fk_orders_lookups_orderStatus');
-DROP TABLE IF EXISTS lookups;
-
 /*suppliers*/
 CALL sp_FK_Drop ('orders', 'fk_orders_suppliers_orderedFrom');
 DROP TABLE IF EXISTS suppliers;
@@ -72,13 +66,6 @@ DROP TABLE IF EXISTS inventoryItems;
 
 DELIMITER ;
 
-CREATE TABLE lookups (
-    listName VARCHAR(32) NOT NULL,
-    listValue VARCHAR(32) NOT NULL,
-    PRIMARY KEY (listName, listValue),
-    INDEX idx_lookups_listValue (listValue)
-    );
-
 CREATE TABLE suppliers (
     supplierId INT UNSIGNED NOT NULL AUTO_INCREMENT,
     nickname VARCHAR(32) NOT NULL,
@@ -89,36 +76,39 @@ CREATE TABLE suppliers (
 
 CREATE TABLE orders (
     orderId INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    description VARCHAR (64) NOT NULL,
+    description VARCHAR(64) NOT NULL,
     orderedFrom INT UNSIGNED NOT NULL,
-    orderStatus VARCHAR (32) NOT NULL,
+    orderStatus VARCHAR(32) NOT NULL,
     dateOrdered DATE NOT NULL,
     dateExpected DATE NULL,
     PRIMARY KEY (orderId),
-    CONSTRAINT fk_orders_suppliers_orderedFrom FOREIGN KEY (orderedFrom) REFERENCES suppliers(supplierId),
-    CONSTRAINT fk_orders_lookups_orderStatus FOREIGN KEY (orderStatus) REFERENCES lookups(listValue)
-   );
+    CONSTRAINT fk_orders_suppliers_orderedFrom FOREIGN KEY (orderedFrom)
+        REFERENCES suppliers (supplierId)
+);
 
 CREATE TABLE items (
     itemId INT UNSIGNED NOT NULL AUTO_INCREMENT,
-    description VARCHAR (64) NOT NULL,
+    description VARCHAR(64) NOT NULL,
     sku VARCHAR(32) NULL,
     sizeUnit VARCHAR(32) NULL,
     itemStatus VARCHAR(32) NOT NULL,
-    PRIMARY KEY (itemId),
-    CONSTRAINT fk_items_lookups_itemStatus FOREIGN KEY (itemStatus) REFERENCES lookups(listValue)
-    );
+    PRIMARY KEY (itemId)
+);
     
 CREATE TABLE orderItems (
     orderItemId INT UNSIGNED NOT NULL AUTO_INCREMENT,
     orderId INT UNSIGNED NOT NULL,
     itemId INT UNSIGNED NOT NULL,
     quantityOrdered INT UNSIGNED NOT NULL DEFAULT 1,
+    quantityCheckedIn INT UNSIGNED NOT NULL DEFAULT 0,
     price DOUBLE UNSIGNED NOT NULL DEFAULT 0,
     extendedPrice DOUBLE UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (orderItemId),
-    CONSTRAINT fk_orderItems_orders_orderId FOREIGN KEY (orderId) REFERENCES orders (orderId),
-    CONSTRAINT fk_orderItems_items_itemId FOREIGN KEY (itemId) REFERENCES items (itemId)
+    CONSTRAINT fk_orderItems_orders_orderId FOREIGN KEY (orderId)
+        REFERENCES orders (orderId)
+        ON DELETE CASCADE,
+    CONSTRAINT fk_orderItems_items_itemId FOREIGN KEY (itemId)
+        REFERENCES items (itemId)
 );
 
 CREATE TABLE inventoryItems (
@@ -127,7 +117,9 @@ CREATE TABLE inventoryItems (
     quantity INT UNSIGNED NOT NULL DEFAULT 0,
     expirationDate DATE NULL,
     PRIMARY KEY (inventoryItemId),
-    CONSTRAINT fk_inventoryItems_items_itemId FOREIGN KEY (itemId) REFERENCES items (itemId)
+    CONSTRAINT fk_inventoryItems_items_itemId FOREIGN KEY (itemId)
+        REFERENCES items (itemId)
+        ON DELETE CASCADE
 );
 
 /***********************************************************************
@@ -135,61 +127,6 @@ CREATE TABLE inventoryItems (
 ***********************************************************************/
 
 DELIMITER ;;
-
-/*lookups*/
-DROP PROCEDURE IF EXISTS sp_Lookups_SelectAll;;
-CREATE DEFINER = CURRENT_USER 
-PROCEDURE sp_Lookups_SelectAll ()
-BEGIN
-   	SELECT *
-	FROM lookups;
-END;;
-
-DROP PROCEDURE IF EXISTS sp_Lookups_Select;;
-CREATE DEFINER = CURRENT_USER 
-PROCEDURE sp_Lookups_Select (
-	IN listName VARCHAR(32)
-)
-BEGIN
-	SELECT *
-	FROM lookups
-	WHERE lookups.listName = listName;
-END;;
-
-DROP PROCEDURE IF EXISTS sp_Lookups_Insert;;
-CREATE DEFINER = CURRENT_USER 
-PROCEDURE sp_Lookups_Insert (
-	IN listName VARCHAR(32),
-    IN listValue VARCHAR(32)
-)
-BEGIN
-	INSERT INTO lookups(listName, listValue)
-	VALUES(listName, listValue);
-    
-    /*PK is listName, so no need to return it.*/
-END;;
-
-DROP PROCEDURE IF EXISTS sp_Lookups_Update;;
-CREATE DEFINER = CURRENT_USER 
-PROCEDURE sp_Lookups_Update (
-	IN listName VARCHAR(32),
-    IN listValue VARCHAR(32)
-)
-BEGIN
-	UPDATE lookups
-    SET lookups.listValue = listValue
-	WHERE lookups.listName = listName;
-END;;
-
-DROP PROCEDURE IF EXISTS sp_Lookups_Delete;;
-CREATE DEFINER = CURRENT_USER 
-PROCEDURE sp_Lookups_Delete (
-	IN listName VARCHAR(32)
-)
-BEGIN
-	DELETE FROM lookups
-	WHERE lookups.listName = listName;
-END;;
 
 /*suppliers*/
 DROP PROCEDURE IF EXISTS sp_Suppliers_SelectAll;;
@@ -322,7 +259,8 @@ CREATE DEFINER = CURRENT_USER
 PROCEDURE sp_OrderItems_SelectAll ()
 BEGIN
 	SELECT orderItems.orderItemId, orderItems.orderId, orderItems.itemId,
-		orderItems.quantityOrdered, orderItems.price, orderItems.extendedPrice,
+		orderItems.quantityOrdered, orderItems.quantityCheckedIn, 
+        orderItems.price, orderItems.extendedPrice,
 		items.description, items.sku, items.sizeUnit, items.itemStatus
 	FROM orderItems
 		INNER JOIN items ON orderItems.itemId = items.itemId;
@@ -335,11 +273,27 @@ PROCEDURE sp_OrderItems_Select (
 )
 BEGIN
 	SELECT orderItems.orderItemId, orderItems.orderId, orderItems.itemId,
-		orderItems.quantityOrdered, orderItems.price, orderItems.extendedPrice,
+		orderItems.quantityOrdered, orderItems.quantityCheckedIn,
+        orderItems.price, orderItems.extendedPrice,
 		items.description, items.sku, items.sizeUnit, items.itemStatus 
 	FROM orderItems
 		INNER JOIN items ON orderItems.itemId = items.itemId
 	WHERE orderitems.orderItemId = orderItemId;
+END;;
+
+DROP PROCEDURE IF EXISTS sp_OrderItems_SelectByOrder;;
+CREATE DEFINER = CURRENT_USER 
+PROCEDURE sp_OrderItems_SelectByOrder (
+	IN orderId INT UNSIGNED
+)
+BEGIN
+	SELECT orderItems.orderItemId, orderItems.orderId, orderItems.itemId,
+		orderItems.quantityOrdered, orderItems.quantityCheckedIn,
+        orderItems.price, orderItems.extendedPrice,
+		items.description, items.sku, items.sizeUnit, items.itemStatus 
+	FROM orderItems
+		INNER JOIN items ON orderItems.itemId = items.itemId
+	WHERE orderitems.orderId = orderId;
 END;;
 
 DROP PROCEDURE IF EXISTS sp_OrderItems_Insert;;
@@ -352,12 +306,14 @@ PROCEDURE sp_OrderItems_Insert (
     IN price DOUBLE UNSIGNED
 )
 BEGIN
+	DECLARE quantityCheckedIn INT UNSIGNED;
     DECLARE extendedPrice DOUBLE UNSIGNED;
     
+    SET quantityCheckedIn = 0;
     SET extendedPrice = (quantityOrdered * price);
     
-	INSERT INTO orderItems (orderId, itemId, quantityOrdered, price, extendedPrice)
-    VALUES (orderId, itemId, quantityOrdered, price, extendedPrice);
+	INSERT INTO orderItems (orderId, itemId, quantityOrdered, quantityCheckedIn, price, extendedPrice)
+    VALUES (orderId, itemId, quantityOrdered, quantityCheckedIn, price, extendedPrice);
 	SET orderItemId = LAST_INSERT_ID(); 
 END;;
 
@@ -366,6 +322,7 @@ CREATE DEFINER = CURRENT_USER
 PROCEDURE sp_OrderItems_Update (
 	IN orderItemId INT UNSIGNED,
 	IN quantityOrdered INT UNSIGNED,
+    IN quantityCheckedIn INT UNSIGNED,
     IN price DOUBLE UNSIGNED
 )
 BEGIN
@@ -376,6 +333,7 @@ BEGIN
 	UPDATE orderitems
 	SET	orderitems.quantityOrdered = quantityOrdered,
 		orderitems.price = price,
+        orderItems.quantityCheckedIn = quantityCheckedIn,
 		orderitems.extendedPrice = extendedPrice
 	WHERE
 		orderitems.orderItemId = orderItemId;
@@ -406,7 +364,7 @@ END;;
 DROP PROCEDURE IF EXISTS sp_InventoryItems_Select;;
 CREATE DEFINER = CURRENT_USER 
 PROCEDURE sp_InventoryItems_Select (
-	IN InventoryItemId INT UNSIGNED
+	IN inventoryItemId INT UNSIGNED
 )
 BEGIN
 	SELECT inventoryitems.inventoryItemId, inventoryitems.itemId,
@@ -415,6 +373,21 @@ BEGIN
 	FROM inventoryItems
 		INNER JOIN items ON inventoryItems.itemId = items.itemId
 	WHERE InventoryItems.InventoryItemId = inventoryItemId;
+END;;
+
+DROP PROCEDURE IF EXISTS sp_InventoryItems_SelectByOrderItem;;
+CREATE DEFINER = CURRENT_USER 
+PROCEDURE sp_InventoryItems_SelectByOrderItem (
+	IN orderItemId INT UNSIGNED
+)
+BEGIN
+	SELECT inventoryitems.inventoryItemId, inventoryitems.itemId,
+		inventoryitems.quantity, inventoryitems.expirationDate,
+		items.description, items.sku, items.sizeUnit, items.itemStatus 
+	FROM inventoryItems
+		INNER JOIN items ON inventoryItems.itemId = items.itemId
+        INNER JOIN orderitems ON orderItems.itemId = items.itemId
+	WHERE OrderItems.OrderItemId = orderItemId;
 END;;
 
 DROP PROCEDURE IF EXISTS sp_InventoryItems_Insert;;
@@ -453,7 +426,7 @@ END;;
 DROP PROCEDURE IF EXISTS sp_InventoryItems_Update;;
 CREATE DEFINER = CURRENT_USER 
 PROCEDURE sp_InventoryItems_Update (
-	IN InventoryItemId INT UNSIGNED,
+	IN inventoryItemId INT UNSIGNED,
     IN quantity INT UNSIGNED,
     IN expirationDate DATE,
 	IN description VARCHAR(64),
@@ -473,8 +446,8 @@ BEGIN
 	UPDATE items
     SET items.description = description,
 		items.sku = sku,
-	   items.sizeUnit = sizeUnit,
-	   items.itemStatus = itemStatus
+		items.sizeUnit = sizeUnit,
+		items.itemStatus = itemStatus
 	WHERE items.itemId = (
 		SELECT inventoryitems.itemId
 		FROM inventoryitems
@@ -514,10 +487,7 @@ BEGIN
 	WHERE inventoryItems.inventoryItemId = inventoryItemId;
 
 	DELETE FROM items
-	WHERE items.itemId = itemId
-		AND items.ItemId NOT IN (
-			SELECT orderitems.itemId
-			FROM orderitems);
+	WHERE items.itemId = itemId;
 
 	COMMIT WORK;
 END;;
@@ -527,14 +497,6 @@ END;;
 ***********************************************************************/
 
 DELIMITER ;
-
-/*lookups*/
-INSERT INTO lookups (listName, listValue) VALUES ('orderStatuses', 'Ordered');
-INSERT INTO lookups (listName, listValue) VALUES ('orderStatuses', 'Shipping');
-INSERT INTO lookups (listName, listValue) VALUES ('orderStatuses', 'Arrived');
-INSERT INTO lookups (listName, listValue) VALUES ('itemStatuses', 'Available');
-INSERT INTO lookups (listName, listValue) VALUES ('itemStatuses', 'Discontinued');
-INSERT INTO lookups (listName, listValue) VALUES ('itemStatuses', 'Do Not Replace');
 
 /*suppliers*/
 INSERT INTO suppliers (nickname, url) VALUES ('Amazon', 'https://www.amazon.com/');

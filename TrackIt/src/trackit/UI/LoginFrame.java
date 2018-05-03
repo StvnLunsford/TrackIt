@@ -10,26 +10,33 @@ import trackit.*;
  *
  * @author Douglas
  */
-public class LoginUI extends JFrame {
+public class LoginFrame
+        extends JFrame {
     // <editor-fold defaultstate="collapsed" desc="Constants">
 
+    /**
+     * The name of the window.
+     */
     private static final String WINDOW_NAME = "Login";
     // </editor-fold>
     // <editor-fold defaultstate="expanded" desc="Private Fields">
     private final Login bll = new Login();
+    private GridBagConstraints gbc = new GridBagConstraints();
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Components">
-    JLabel lblUsername, lblPassword, lblTitle, lblAccess;
-    JTextField tfUsername;
-    JPanel pnlNorth, pnlSouth, pnlCenter, pnlCentWest, pnlCentCenter, pnlCentSouth;
-    JPasswordField pfPassword;
-    JButton btnLogin;
-    String username, password;
+    private JLabel lblUsername, lblPassword, lblTitle;
+    private JTextField tfUsername;
+    private JPasswordField pfPassword;
+    private JButton btnLogin;
 
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Constructors">
-    public LoginUI() {
+    /**
+     * Login
+     */
+    public LoginFrame() {
         initializeComponents();
+        this.tfUsername.requestFocusInWindow();
     }
 
     /**
@@ -38,14 +45,38 @@ public class LoginUI extends JFrame {
      *
      * @param userName The value to appear in the User Name textbox.
      */
-    public LoginUI(String userName) {
+    public LoginFrame(String userName) {
         this();
 
         this.tfUsername.setText(userName);
+        this.pfPassword.requestFocusInWindow();
     }
 
     // </editor-fold>
     // <editor-fold defaultstate="collapsed" desc="Private Methods">
+    /**
+     * Added solely to prevent serialization and Inspector items related to
+     * such.
+     *
+     * @param stream
+     * @throws java.io.IOException
+     */
+    private void writeObject(java.io.ObjectOutputStream stream) throws java.io.IOException {
+        throw new java.io.NotSerializableException(getClass().getName());
+    }
+
+    /**
+     * Added solely to prevent serialization and Inspector items related to
+     * such.
+     *
+     * @param stream
+     * @throws java.io.IOException
+     * @throws ClassNotFoundException
+     */
+    private void readObject(java.io.ObjectInputStream stream) throws java.io.IOException, ClassNotFoundException {
+        throw new java.io.NotSerializableException(getClass().getName());
+    }
+
     /**
      * Sets up all components used in this frame.
      */
@@ -54,7 +85,7 @@ public class LoginUI extends JFrame {
         int frameWidth = 500;
         int frameHeight = 150;
         Dimension dimFrame = new Dimension(frameWidth, frameHeight);
-        this.setTitle(WINDOW_NAME);
+        this.setTitle(Utilities.getWindowCaption(WINDOW_NAME));
         this.setPreferredSize(dimFrame);
         this.setLocationRelativeTo(null);
         this.setResizable(false);
@@ -62,50 +93,57 @@ public class LoginUI extends JFrame {
         this.addWindowListener(new CloseQuery());
         this.setLayout(new BorderLayout());
 
-        //Add all components here and set properties.
-        Box usernameBx, passwordBx, submitBx, combine;
+        gbc = new GridBagConstraints();
+        setLayout(new GridBagLayout());
+        gbc.insets = new Insets(2, 2, 5, 0);
+        gbc.anchor = GridBagConstraints.LINE_START;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        pnlNorth = new JPanel();
         lblTitle = new JLabel(Utilities.PROGRAM_NAME_LONG);
-        pnlNorth.add(lblTitle);
-        add(pnlNorth, BorderLayout.NORTH);
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        add(lblTitle, gbc);
 
-        pnlCenter = new JPanel();
-        add(pnlCenter, BorderLayout.CENTER);
+        // Item Name Label Initialized
+        lblUsername = new JLabel("Username:");
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        add(lblUsername, gbc);
 
-        usernameBx = Box.createHorizontalBox();
-        lblUsername = new JLabel("Username: ");
-        usernameBx.add(lblUsername);
-        tfUsername = new JTextField(20);
-        usernameBx.add(tfUsername);
-        passwordBx = Box.createHorizontalBox();
-        lblPassword = new JLabel("Password: ");
-        passwordBx.add(lblPassword);
-        pfPassword = new JPasswordField(20);
-        passwordBx.add(pfPassword);
-        submitBx = Box.createHorizontalBox();
-        btnLogin = new JButton("Log In");
-        submitBx.add(btnLogin);
+        // Item Name Text Field
+        tfUsername = new JTextField(25);
+        gbc.gridx = 1;
+        gbc.gridy = 1;
+        gbc.gridwidth = 5;
+        add(tfUsername, gbc);
 
-        combine = Box.createVerticalBox();
-        combine.add(usernameBx);
-        combine.add(passwordBx);
-        combine.add(submitBx);
+        // Initialize password label and text field
+        lblPassword = new JLabel("Password:");
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        gbc.gridwidth = 1;
+        add(lblPassword, gbc);
 
-        pnlCenter.add(combine);
+        pfPassword = new JPasswordField(25);
+        gbc.gridx = 1;
+        gbc.gridy = 2;
+        gbc.gridwidth = 5;
+        add(pfPassword, gbc);
 
-        pnlSouth = new JPanel();
-        lblAccess = new JLabel("");
-        pnlSouth.add(lblAccess);
-        add(lblAccess, BorderLayout.SOUTH);
-
+        // Init Ok Button
+        btnLogin = new JButton(Utilities.BUTTON_LOGIN);
+        this.getRootPane().setDefaultButton(btnLogin);
+        gbc.gridx = 4;
+        gbc.gridy = 4;
+        gbc.gridwidth = 1;
+        add(btnLogin, gbc);
         btnLogin.addActionListener((ActionEvent e) -> {
             if (this.bll.startLogin(this.tfUsername.getText().trim(), new String(this.pfPassword.getPassword()))) {
                 this.dispose();
             } else {
                 JOptionPane.showMessageDialog(this,
-                        "Error Logging in.  Error = " + bll.getErrorMessage(), "Error",
-                        JOptionPane.OK_OPTION);
+                        "Error Logging in.  Error = " + Utilities.getErrorMessage(),
+                        Utilities.ERROR_MSG_CAPTION, JOptionPane.ERROR_MESSAGE);
                 if (this.bll.isTooManyLoginAttempts()) {
                     this.dispose();
                 }
@@ -130,7 +168,7 @@ public class LoginUI extends JFrame {
     /**
      * Handles all aspects of closing the program.
      */
-    private class CloseQuery extends WindowAdapter {
+    private static class CloseQuery extends WindowAdapter {
 
         @Override
         public void windowClosing(WindowEvent e) {
